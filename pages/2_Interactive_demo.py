@@ -9,6 +9,8 @@ done in functions stored in files named container_(something).py
 """
 # ----- Imports -----
 import streamlit as st
+import pandas as pd
+import numpy as np
 
 # Custom functions:
 from utilities.fixed_params import page_setup
@@ -26,16 +28,7 @@ import utilities.container_details
 page_setup()
 
 # Title:
-st.markdown('# Interactive demo')
-# Draw a blue information box:
-st.info(
-    ':information_source: ' +
-    'For acronym reference, see the introduction page.'
-    )
-# Intro text:
-write_text_from_file('pages/text_for_pages/2_Intro_for_demo.txt',
-                     head_lines_to_skip=2)
-
+st.markdown('# Descriptive statistics')
 
 # ###########################
 # ########## SETUP ##########
@@ -43,27 +36,31 @@ write_text_from_file('pages/text_for_pages/2_Intro_for_demo.txt',
 st.header('Setup')
 st.subheader('Inputs')
 
-# Draw the input selection boxes in this function:
-animals_df, animal, feature, row_value = utilities.container_inputs.main()
+stroke_team_list = pd.read_csv(
+    './data/stroke_teams.csv', index_col=False).sort_values('stroke_team')
+
+stroke_teams_selected = st.multiselect('Stroke team', options=stroke_team_list)
+
+limit_to_4hr = st.toggle('Limit to arrival within 4hr')
+
+
+if limit_to_4hr:
+    summary_stats_file = 'summary_stats_4hr.csv'
+else:
+    summary_stats_file = 'summary_stats.csv'
+
+summary_stats_df = pd.read_csv(
+    './data/' + summary_stats_file, index_col=0
+)
+
+teams_to_show = ['all E+W'] + stroke_teams_selected
 
 
 # ###########################
 # ######### RESULTS #########
 # ###########################
 st.header('Results')
-# Draw a plot in this function:
-utilities.container_results.main(row_value, animal, feature)
 
-
-# ###########################
-# ######### DETAILS #########
-# ###########################
-st.write('-'*50)
-st.header('Details of the calculation')
-st.write('The following bits detail the calculation.')
-
-with st.expander('Some details'):
-    # Draw the equation in this function:
-    utilities.container_details.main(animal, feature, row_value)
+st.write(summary_stats_df[teams_to_show])
 
 # ----- The end! -----

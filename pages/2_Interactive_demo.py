@@ -10,7 +10,7 @@ done in functions stored in files named container_(something).py
 # ----- Imports -----
 import streamlit as st
 import pandas as pd
-# import numpy as np
+import numpy as np
 
 
 # Add an extra bit to the path if we need to.
@@ -50,6 +50,40 @@ except FileNotFoundError:
 # import utilities.container_details
 
 
+def make_emoji_dict_by_team(
+        year_options,
+        stroke_team_list,
+        stroke_team_list_years
+        ):
+    # Start with black circle for "all teams" group:
+    emoji_teams_vals = ['⚫'] * len(year_options)
+    # Cycle through these emoji for the other stroke teams:
+    emoji_teams = ['🔴', '🟠', '🟡', '🟢', '🔵', '🟣'] # '🟤' '⚪' '⚫' ⏺
+    for i in range(len(stroke_team_list)):
+        emoji_teams_vals += [emoji_teams[i % len(emoji_teams)]] * len(year_options)
+    # st.write(text_colours_vals)
+    emoji_teams_dict = dict(zip(stroke_team_list_years, emoji_teams_vals))
+    return emoji_teams_dict
+
+def make_emoji_dict_by_region(
+        year_options,
+        stroke_team_list,
+        stroke_team_list_years,
+        region_list
+        ):
+
+    # Start with black circle for "all teams" group:
+    emoji_teams_vals = ['⚫'] * len(year_options)
+    # Use these emoji for the regions:
+    emoji_teams = ['🔴', '🟠', '🟡', '🟢', '🔵', '🟣', '🟤', '⚪', '🔶', '🔷']# '⚫' ⏺
+    region_set = sorted(list(set(region_list)))
+
+    for i in range(len(stroke_team_list)):
+        emoji_teams_vals += [emoji_teams[region_set.index(region_list[i])]] * len(year_options)
+    # st.write(text_colours_vals)
+    emoji_teams_dict = dict(zip(stroke_team_list_years, emoji_teams_vals))
+    return emoji_teams_dict
+
 def main():
     # ###########################
     # ##### START OF SCRIPT #####
@@ -63,14 +97,17 @@ def main():
     # ########## SETUP ##########
     # ###########################
 
-    stroke_team_list = pd.read_csv(
-        dir + './data_descriptive/stroke_teams.csv',
-        index_col=False).sort_values('stroke_team')
-    # List of stroke teams
-    stroke_team_list = list(stroke_team_list.squeeze().values)
+    # Import list of all stroke teams:
+    df_stroke_team = pd.read_csv(
+        dir + './data_descriptive/hospitals_and_lsoas_descriptive_stats.csv',
+        index_col=False).sort_values('Stroke Team')
 
-    # Add filter by region:
-    # ----------------------------------------------------------------------------------------------- To do 
+    # List of stroke teams
+    stroke_team_list = list(df_stroke_team['Stroke Team'].squeeze().values)
+
+    # List of regions
+    region_list = sorted(list(set(df_stroke_team['RGN11NM'].squeeze().values)))
+    region_team_list = list(df_stroke_team['RGN11NM'].squeeze().values)
 
     # Add in all the year options:
     year_options = ['2016 to 2021', '2016', '2017',
@@ -91,15 +128,19 @@ def main():
     # Team 2 (2017)
     # ...
     # Team 2 (2021)
+    # Similar for regions:
+    region_team_list_years = [
+        region
+        for region in ['all E+W'] + region_team_list
+        for y in year_options
+    ]
 
-    # Start with black circle for "all teams" group:
-    emoji_teams_vals = ['⚫'] * len(year_options)
-    # Cycle through these emoji for the other stroke teams:
-    emoji_teams = ['🔴', '🟠', '🟡', '🟢', '🔵', '🟣'] # '🟤' '⚪' '⚫' ⏺
-    for i in range(len(stroke_team_list)):
-        emoji_teams_vals += [emoji_teams[i % len(emoji_teams)]] * len(year_options)
-    # st.write(text_colours_vals)
-    emoji_teams_dict = dict(zip(stroke_team_list_years, emoji_teams_vals))
+    emoji_teams_dict = make_emoji_dict_by_region(
+        year_options,
+        stroke_team_list,
+        stroke_team_list_years,
+        region_team_list
+        )
 
     text_colours = ['blue', 'green', 'orange', 'red', 'violet', 'grey', 'rainbow']
     text_colours_vals = []
@@ -109,6 +150,34 @@ def main():
     text_colours_dict = dict(zip(stroke_team_list_years, text_colours_vals))
     # st.write(text_colours_dict)
 
+    # Select a region:
+    st.markdown('Show teams from these regions:')
+    cols_regions = st.columns(5)
+    regions_selected_bool = []
+    for r, region in enumerate(region_list):
+        with cols_regions[r % len(cols_regions)]:
+            region_bool = st.checkbox(region, key=region)
+        regions_selected_bool.append(region_bool)
+
+    regions_selected = list(np.array(region_list)[regions_selected_bool])
+
+    # Reduce the big lists to only regions selected:
+    full_list_regions_selected_bool = np.full(len(region_team_list_years), False)
+    for region in ['all E+W'] + regions_selected:
+        inds = np.where(np.array(region_team_list_years) == region)
+        full_list_regions_selected_bool[inds] = True
+
+    stroke_team_list_years_by_region_selected = (
+        np.array(stroke_team_list_years)[full_list_regions_selected_bool]
+    )
+    # st.write(emoji_teams_dict.keys())
+    # st.write(emoji_teams_dict.keys())
+    emoji_teams_dict_by_region_selected = dict(
+        zip(
+            np.array(list(emoji_teams_dict.keys()))[full_list_regions_selected_bool],
+            np.array(list(emoji_teams_dict.values()))[full_list_regions_selected_bool]
+            )
+        )
 
     # Use the format function in the multiselect to highlight the
     # options that use all years of the data.
@@ -117,14 +186,14 @@ def main():
     # each team.
     stroke_teams_selected = st.multiselect(
         'Stroke team',
-        options=stroke_team_list_years,
+        options=stroke_team_list_years_by_region_selected,
         # default='⏺ all E+W (2016 to 2021)'
         default='all E+W (2016 to 2021)',
         # format_func=(lambda x: f'⏺ {x}'
         #              if year_options[0] in x else f'{x}')
         # format_func=(lambda x: f':{text_colours_dict[x]}[⏺ {x}]')
         # format_func=(lambda x: f''':{text_colours_dict[x]}[⏺] {x}''')
-        format_func=(lambda x: f'{emoji_teams_dict[x]} {x}')
+        format_func=(lambda x: f'{emoji_teams_dict_by_region_selected[x]} {x}')
         )
 
     limit_to_4hr = st.toggle('Limit to arrival within 4hr')

@@ -60,9 +60,10 @@ def make_emoji_dict_by_team(
     # Start with black circle for "all teams" group:
     emoji_teams_vals = ['⚫'] * len(year_options)
     # Cycle through these emoji for the other stroke teams:
-    emoji_teams = ['🔴', '🟠', '🟡', '🟢', '🔵', '🟣'] # '🟤' '⚪' '⚫' ⏺
+    emoji_teams = ['🔴', '🟠', '🟡', '🟢', '🔵', '🟣']  # '🟤' '⚪' '⚫' ⏺
     for i in range(len(stroke_team_list)):
-        emoji_teams_vals += [emoji_teams[i % len(emoji_teams)]] * len(year_options)
+        emoji_teams_vals += ([emoji_teams[i % len(emoji_teams)]] *
+                             len(year_options))
     # st.write(text_colours_vals)
     emoji_teams_dict = dict(zip(stroke_team_list_years, emoji_teams_vals))
     return emoji_teams_dict
@@ -74,19 +75,25 @@ def make_emoji_dict_by_region(
         stroke_team_list,
         stroke_team_list_years,
         region_list,
-        all_regions_str = 'all E+W'
+        all_regions_str='all E+W'
         ):
 
     # Start with "all teams" group:
-    emoji_teams_vals = [emoji_regions_dict[all_regions_str]] * len(year_options)
+    emoji_teams_vals = ([emoji_regions_dict[all_regions_str]] *
+                        len(year_options))
     for i in range(len(stroke_team_list)):
-        emoji_teams_vals += [emoji_regions_dict[region_list[i]]] * len(year_options)
+        emoji_teams_vals += ([emoji_regions_dict[region_list[i]]] *
+                             len(year_options))
     # st.write(text_colours_vals)
     emoji_teams_dict = dict(zip(stroke_team_list_years, emoji_teams_vals))
     return emoji_teams_dict
 
 
-def build_lists_for_each_team_and_year(stroke_team_list, year_options, region_team_list):
+def build_lists_for_each_team_and_year(
+        stroke_team_list,
+        year_options,
+        region_team_list
+        ):
     stroke_team_list_years = [
         f'{s} ({y})'
         for s in ['all E+W'] + stroke_team_list
@@ -129,7 +136,8 @@ def reduce_big_lists_to_regions_selected(
         stroke_team_list_years,
         emoji_teams_dict
 ):
-    full_list_regions_selected_bool = np.full(len(region_team_list_years), False)
+    full_list_regions_selected_bool = np.full(
+        len(region_team_list_years), False)
     for region in ['all E+W'] + regions_selected:
         inds = np.where(np.array(region_team_list_years) == region)
         full_list_regions_selected_bool[inds] = True
@@ -141,8 +149,10 @@ def reduce_big_lists_to_regions_selected(
     # st.write(emoji_teams_dict.keys())
     emoji_teams_dict_by_region_selected = dict(
         zip(
-            np.array(list(emoji_teams_dict.keys()))[full_list_regions_selected_bool],
-            np.array(list(emoji_teams_dict.values()))[full_list_regions_selected_bool]
+            np.array(list(emoji_teams_dict.keys()))[
+                full_list_regions_selected_bool],
+            np.array(list(emoji_teams_dict.values()))[
+                full_list_regions_selected_bool]
             )
         )
     return (stroke_team_list_years_by_region_selected,
@@ -225,6 +235,89 @@ def plot_geography_pins(region_list, df_stroke_team):
     st.caption('Locations of the stroke teams, colour-coded by region.')
 
 
+def plot_violins(
+        summary_stats_df,
+        feature,
+        year_options,
+        stroke_teams_selected_without_year,
+        all_years_str,
+        all_teams_str
+        ):
+    fig = go.Figure()
+
+    fig.update_layout(
+        width=1300,
+        height=500,
+        # margin_l=0, margin_r=0, margin_t=0, margin_b=0
+        )
+
+    # Rename to keep code short:
+    s = summary_stats_df.T
+    # Remove "all teams" data:
+    s = s[s['stroke_team'] != 'all E+W']
+
+    for y, year in enumerate(year_options):
+        if year == all_years_str:
+            colour = 'Thistle'
+        else:
+            colour = 'Grey'
+
+        # Include "to numeric" in case some of the numbers
+        # are secretly strings (despite my best efforts).
+        violin_vals = pd.to_numeric(s[feature][s['year'] == year])
+
+        fig.add_trace(go.Violin(
+            x=s['year'][s['year'] == year],
+            y=violin_vals,
+            name=year,
+            line=dict(color=colour),
+            points=False,
+            hoveron='points',
+            showlegend=False
+            ))
+
+        # Add three scatter markers for min/max/median
+        # with vertical line connecting them:
+        fig.add_trace(go.Scatter(
+            x=[year]*3,
+            y=[violin_vals.min(), violin_vals.max(), violin_vals.median()],
+            line_color='black',
+            marker=dict(size=20, symbol='line-ew-open'),
+            # name='Final Probability',
+            showlegend=False,
+            hoverinfo='skip',
+            ))
+
+    for stroke_team in stroke_teams_selected_without_year:
+        if stroke_team != all_teams_str:
+            scatter_vals = s[(
+                # (s['year'] == year) &
+                (s['stroke_team'] == stroke_team)
+                )]
+            fig.add_trace(go.Scatter(
+                x=scatter_vals['year'],
+                y=scatter_vals[feature],
+                mode='markers',
+                name=stroke_team
+            ))
+
+    fig.update_layout(yaxis_title=feature)
+    # Move legend to bottom
+    fig.update_layout(legend=dict(
+        orientation='h',
+        yanchor='top',
+        y=-0.2,
+        xanchor='right',
+        x=0.9,
+        # itemwidth=50
+    ))
+
+    plotly_config = {
+        'modeBarButtonsToRemove': ['lasso2d', 'select2d'],
+    }
+    st.plotly_chart(fig, config=plotly_config)
+
+
 def main():
     # ###########################
     # ##### START OF SCRIPT #####
@@ -271,9 +364,9 @@ def main():
         '🔴', '🟠', '🟡', '🟢', '🔵', '🟣', '🟤', '🩶', '⚫', '🩵'
         ]
     # st.write('''
-    # 🟥🟧🟨🟩🟦🟪🟫⬜⬛  
-    # 🔴🟠🟡🟢🔵🟣🟤⚪⚫  
-    # ❤️🧡💛💚💙🩵💜🤎🖤🩶🤍  
+    # 🟥🟧🟨🟩🟦🟪🟫⬜⬛
+    # 🔴🟠🟡🟢🔵🟣🟤⚪⚫
+    # ❤️🧡💛💚💙🩵💜🤎🖤🩶🤍
     # ''')
     region_set = [all_regions_str] + region_list
     emoji_regions_dict = dict(zip(region_set, emoji_teams))
@@ -322,7 +415,6 @@ def main():
         emoji_teams_dict
         )
 
-
     with cols_regions[0]:
         # Use the format function in the multiselect to change how
         # the team names are displayed without changing their names
@@ -334,7 +426,8 @@ def main():
             'Stroke team',
             options=stroke_team_list_years_by_region_selected,
             default=f'all E+W ({all_years_str})',
-            format_func=(lambda x: f'{emoji_teams_dict_by_region_selected[x]} {x}')
+            format_func=(lambda x:
+                         f'{emoji_teams_dict_by_region_selected[x]} {x}')
             )
 
         limit_to_4hr = st.toggle('Limit to arrival within 4hr')
@@ -413,77 +506,14 @@ def main():
     stroke_teams_selected_without_year = [
         team.split(' (')[0] for team in stroke_teams_selected]
 
-    fig = go.Figure()
-
-    fig.update_layout(
-        width=1300,
-        height=500,
-        # margin_l=0, margin_r=0, margin_t=0, margin_b=0
+    plot_violins(
+        summary_stats_df,
+        feature,
+        year_options,
+        stroke_teams_selected_without_year,
+        all_years_str,
+        all_teams_str
         )
-
-    # Rename to keep code short:
-    s = summary_stats_df.T
-    # Remove "all teams" data:
-    s = s[s['stroke_team'] != 'all E+W']
-
-    for y, year in enumerate(year_options):
-        if year == all_years_str:
-            colour = 'Thistle'
-        else:
-            colour = 'Grey'
-
-        # Include "to numeric" in case some of the numbers
-        # are secretly strings (despite my best efforts).
-        violin_vals = pd.to_numeric(s[feature][s['year'] == year])
-
-        fig.add_trace(go.Violin(
-            x=s['year'][s['year'] == year],
-            y=violin_vals,
-            name=year,
-            line=dict(color=colour),
-            points=False,
-            hoveron='points',
-            showlegend=False
-            ))
-
-        # Add three scatter markers for min/max/median
-        # with vertical line connecting them:
-        fig.add_trace(go.Scatter(
-            x=[year]*3,
-            y=[violin_vals.min(), violin_vals.max(), violin_vals.median()],
-            line_color='black',
-            marker=dict(size=20, symbol='line-ew-open'),
-            # name='Final Probability',
-            showlegend=False,
-            hoverinfo='skip',
-            ))
-
-    for stroke_team in stroke_teams_selected_without_year:
-        if stroke_team != all_teams_str:
-            scatter_vals = s[(
-                # (s['year'] == year) &
-                (s['stroke_team'] == stroke_team)
-                )]
-            fig.add_trace(go.Scatter(
-                x=scatter_vals['year'],
-                y=scatter_vals[feature],
-                mode='markers',
-                name=stroke_team
-            ))
-
-    fig.update_layout(yaxis_title=feature)
-    # Move legend to bottom
-    fig.update_layout(legend=dict(
-        orientation='h', #'h',
-        yanchor='top',
-        y=-0.2,
-        xanchor='right',
-        x=0.9,
-        # itemwidth=50
-    ))
-
-    st.plotly_chart(fig)
-
 
     # ----- The end! -----
 

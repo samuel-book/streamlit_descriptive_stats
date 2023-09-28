@@ -130,11 +130,75 @@ def inputs_region_choice(region_list):
     return regions_selected
 
 
+def input_stroke_teams_to_highlight_long(
+        stroke_team_list_years_by_region_selected,
+        all_years_str,
+        emoji_teams_dict_by_region_selected
+        ):
+    """
+    One long list of all of the options for this region
+    """
+    # Use the format function in the multiselect to change how
+    # the team names are displayed without changing their names
+    # in the underlying data.
+    # Because the current ordering of the list is by team and then
+    # by year, this also visually breaks up the list into groups of
+    # each team.
+    stroke_teams_selected = st.multiselect(
+        'Stroke team',
+        options=stroke_team_list_years_by_region_selected,
+        default=f'all E+W ({all_years_str})',
+        format_func=(lambda x:
+                        f'{emoji_teams_dict_by_region_selected[x]} {x}')
+        )
+    return stroke_teams_selected
+
+
+def input_stroke_teams_to_highlight(
+        stroke_team_list,
+        year_options,
+        region_team_list,
+        all_years_str='',
+        emoji_teams_dict_by_region_selected={},
+        containers=[]
+        ):
+    """
+    One input per year
+    """
+    if len(containers) < 1:
+        containers = st.columns(4)
+
+    all_stroke_teams_selected = []
+    for y, year in enumerate(year_options):
+        stroke_team_list_years, region_team_list_years = (
+            build_lists_for_each_team_and_year(
+                stroke_team_list, [year], region_team_list)
+        )
+        # Use the format function in the multiselect to change how
+        # the team names are displayed without changing their names
+        # in the underlying data.
+        # Because the current ordering of the list is by team and then
+        # by year, this also visually breaks up the list into groups of
+        # each team.
+        with containers[y % len(containers)]:
+            stroke_teams_selected = st.multiselect(
+                f'{year}',
+                options=stroke_team_list_years,
+                default=f'all E+W ({year})' if year == all_years_str else None,
+                key=f'input_teams_{year}'
+                # format_func=(lambda x:
+                #                 f'{emoji_teams_dict_by_region_selected[x]} {x}')
+                )
+        all_stroke_teams_selected += stroke_teams_selected
+
+    return all_stroke_teams_selected
+
+
 def reduce_big_lists_to_regions_selected(
         region_team_list_years,
         regions_selected,
         stroke_team_list_years,
-        emoji_teams_dict
+        emoji_teams_dict={}
 ):
     full_list_regions_selected_bool = np.full(
         len(region_team_list_years), False)
@@ -147,14 +211,17 @@ def reduce_big_lists_to_regions_selected(
     )
     # st.write(emoji_teams_dict.keys())
     # st.write(emoji_teams_dict.keys())
-    emoji_teams_dict_by_region_selected = dict(
-        zip(
-            np.array(list(emoji_teams_dict.keys()))[
-                full_list_regions_selected_bool],
-            np.array(list(emoji_teams_dict.values()))[
-                full_list_regions_selected_bool]
+    if len(list(emoji_teams_dict.keys())) > 0:
+        emoji_teams_dict_by_region_selected = dict(
+            zip(
+                np.array(list(emoji_teams_dict.keys()))[
+                    full_list_regions_selected_bool],
+                np.array(list(emoji_teams_dict.values()))[
+                    full_list_regions_selected_bool]
+                )
             )
-        )
+    else:
+        emoji_teams_dict_by_region_selected = {}
     return (stroke_team_list_years_by_region_selected,
             emoji_teams_dict_by_region_selected)
 
@@ -415,20 +482,45 @@ def main():
         emoji_teams_dict
         )
 
+    (stroke_team_list_by_region_selected,
+     emoji_teams_dict_2_by_region_selected
+     ) = reduce_big_lists_to_regions_selected(
+        region_team_list,
+        regions_selected,
+        stroke_team_list,
+        emoji_teams_dict={}
+        )
+    stroke_team_list_by_region_selected = list(stroke_team_list_by_region_selected)
+
     with cols_regions[0]:
-        # Use the format function in the multiselect to change how
-        # the team names are displayed without changing their names
-        # in the underlying data.
-        # Because the current ordering of the list is by team and then
-        # by year, this also visually breaks up the list into groups of
-        # each team.
-        stroke_teams_selected = st.multiselect(
-            'Stroke team',
-            options=stroke_team_list_years_by_region_selected,
-            default=f'all E+W ({all_years_str})',
-            format_func=(lambda x:
-                         f'{emoji_teams_dict_by_region_selected[x]} {x}')
+        cols_t = st.columns(4)
+        with cols_t[0]:
+            st.markdown('All years:')
+        with cols_t[1]:
+            st.markdown('Separate years:')
+        for col in cols_t[2:]:
+            with col:
+                # Unicode looks-like-a-space character
+                # for vertical alignment with the other columns
+                # that have text in.
+                st.markdown('\U0000200B')
+        team_input_containers = [
+            cols_t[0], cols_t[1], cols_t[2], cols_t[3],
+            cols_t[1], cols_t[2], cols_t[3]
+        ]
+        stroke_teams_selected = input_stroke_teams_to_highlight(
+            stroke_team_list_by_region_selected,
+            year_options,
+            region_team_list,
+            all_years_str=all_years_str,
+            # emoji_teams_dict_by_region_selected,
+            containers=team_input_containers
             )
+        # stroke_teams_selected = input_stroke_teams_to_highlight_long(
+        #     stroke_team_list_years_by_region_selected,
+        #     all_years_str,
+        #     emoji_teams_dict_by_region_selected
+        #     )
 
         limit_to_4hr = st.toggle('Limit to arrival within 4hr')
 

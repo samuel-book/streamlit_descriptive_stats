@@ -194,12 +194,23 @@ def plot_geography_pins(region_list, df_stroke_team):
         text=df_stroke_team['emoji']
         # marker_color=df_stroke_team['RGN11NM']
     ))
+    # Text size for markers:
+    fig.update_layout(
+        font=dict(
+            # family="Courier New, monospace",
+            size=6,  # Set the font size here
+            # color="RebeccaPurple"
+        )
+    )
+    # Projection options:
+    # august  eckert1  fahey  times  van der grinten
     fig.update_layout(
         geo_scope='europe',
-        geo_resolution=50,
-        geo_projection=go.layout.geo.Projection(type='airy'),
+        geo_projection=go.layout.geo.Projection(type='times'),
         geo_lonaxis_range=[extent[0], extent[1]],
         geo_lataxis_range=[extent[2], extent[3]],
+        # geo_resolution=50,
+        geo_visible=False
     )
     fig.update_traces(
         hovertemplate='%{customdata[0]}<extra></extra>',
@@ -257,7 +268,7 @@ def main():
     # Use these emoji for the regions:
     emoji_teams = [
         '',  # for "all regions"
-        '🔴', '🟠', '🟡', '🟢', '🔵', '🟣', '🟤', '⚪', '⚫', '🩵'
+        '🔴', '🟠', '🟡', '🟢', '🔵', '🟣', '🟤', '🩶', '⚫', '🩵'
         ]
     # st.write('''
     # 🟥🟧🟨🟩🟦🟪🟫⬜⬛  
@@ -396,33 +407,11 @@ def main():
         'Pick a feature to plot',
         options=row_order,
         # default='count'
-    )#[0]
+    )
 
-    # # Rearrange dataframe by year:
-    # df_feature_years = pd.DataFrame(
-    #     columns=[all_teams_str] + stroke_team_list,
-    #     index=year_options
-    # )
-
-    # # I HATE PANDAS
-    # # This is slow and horribly inefficient but trying to get pandas
-    # # working for this is driving me nuts.
-    # # (is it because "feature" was a list instead of a string?)
-    # for team in [all_teams_str] + stroke_team_list:
-    #     team_vals = []
-    #     for year in year_options:
-    #         feature_value = summary_stats_df.T[(
-    #             (summary_stats_df.T['year'] == year) &
-    #             (summary_stats_df.T['stroke_team'] == team)
-    #         )][feature]
-    #         if len(feature_value) > 0:
-    #             feature_value = feature_value.squeeze()
-    #         else:
-    #             feature_value = np.NaN
-    #         team_vals.append(feature_value)
-    #     df_feature_years[team] = team_vals
-
-    # st.write(df_feature_years)
+    # Remove the (year) string from the selected teams:
+    stroke_teams_selected_without_year = [
+        team.split(' (')[0] for team in stroke_teams_selected]
 
     fig = go.Figure()
 
@@ -432,14 +421,66 @@ def main():
         # margin_l=0, margin_r=0, margin_t=0, margin_b=0
         )
 
+    # Rename to keep code short:
     s = summary_stats_df.T
+    # Remove "all teams" data:
+    s = s[s['stroke_team'] != 'all E+W']
+
     for y, year in enumerate(year_options):
+        if year == all_years_str:
+            colour = 'Thistle'
+        else:
+            colour = 'Grey'
+
+        # Include "to numeric" in case some of the numbers
+        # are secretly strings (despite my best efforts).
+        violin_vals = pd.to_numeric(s[feature][s['year'] == year])
 
         fig.add_trace(go.Violin(
             x=s['year'][s['year'] == year],
-            y=s[feature][s['year'] == year],
-            name=year
+            y=violin_vals,
+            name=year,
+            line=dict(color=colour),
+            points=False,
+            hoveron='points',
+            showlegend=False
             ))
+
+        # Add three scatter markers for min/max/median
+        # with vertical line connecting them:
+        fig.add_trace(go.Scatter(
+            x=[year]*3,
+            y=[violin_vals.min(), violin_vals.max(), violin_vals.median()],
+            line_color='black',
+            marker=dict(size=20, symbol='line-ew-open'),
+            # name='Final Probability',
+            showlegend=False,
+            hoverinfo='skip',
+            ))
+
+    for stroke_team in stroke_teams_selected_without_year:
+        if stroke_team != all_teams_str:
+            scatter_vals = s[(
+                # (s['year'] == year) &
+                (s['stroke_team'] == stroke_team)
+                )]
+            fig.add_trace(go.Scatter(
+                x=scatter_vals['year'],
+                y=scatter_vals[feature],
+                mode='markers',
+                name=stroke_team
+            ))
+
+    fig.update_layout(yaxis_title=feature)
+    # Move legend to bottom
+    fig.update_layout(legend=dict(
+        orientation='h', #'h',
+        yanchor='top',
+        y=-0.2,
+        xanchor='right',
+        x=0.9,
+        # itemwidth=50
+    ))
 
     st.plotly_chart(fig)
 

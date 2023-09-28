@@ -127,7 +127,7 @@ def plot_geography_pins(df_stroke_team):
         'modeBarButtonsToRemove': ['lasso2d', 'select2d'],
     }
     st.plotly_chart(fig, config=plotly_config)
-    st.caption('Locations of the stroke teams, colour-coded by region.')
+    st.caption('Locations of the stroke teams.')
 
 
 def plot_violins(

@@ -208,6 +208,69 @@ def main():
     ]
     df_to_show = df_to_show.loc[row_order]
 
+    # Add another row for colouring. (Is this stupid?)
+    import numpy as np
+    np.random.seed(42)
+    colours = np.random.choice(['red', 'blue', 'yellow', 'green'], size=len(df_to_show.T), replace=True)
+    # string = '█'
+    # colours_str = [
+    #     '<p style="color:' + colour +
+    #     '">' + string + '</p>'
+    #     for colour in colours] 
+    df_to_show.loc['colour'] = colours#_str
+
+    # def f(dat, c='red'):
+    #     return [f'background-color: {c}' for i in dat]
+    
+    # df_to_show = df_to_show.style.apply(f(df_to_show, c=df_to_show.loc['colour']))
+    
+    # # df_to_show = df_to_show.style.apply(f,subset=['Royal Devon and Exeter Hospital (2016 to 2021)'])
+
+    column_names = df_to_show.columns
+    st.write(column_names)
+
+
+
+    styles = [
+        # {
+        #     'selector': 'th.col_heading',
+        #     'props': 'background-color: #000066; color: white;'
+        # },
+        {  # for row hover use <tr> instead of <td>
+            'selector': 'tr:hover',
+            'props': [('background-color', '#ffffb3')]
+        },
+        # {
+        #     'selector':"th:nth-child(even)", 
+        #     'props':[("background-color", "#f2f2f2")]
+        # }
+    ]
+
+    for c, colour in enumerate(colours):
+        # c+2 because HTML has one-indexing,
+        # and the "first" header is the one above the index.
+        # nth-child(2) is the header for the first proper column,
+        # the one that's 0th in the list.
+        # (Working this out has displeased me greatly.)
+        styles.append(
+        {
+            'selector':f"th.col_heading:nth-child({c+2})",
+            'props':[("background-color", f"{colour}")]
+        }
+        )
+
+
+
+    # import numpy as np
+    # # df_to_show = df_to_show.style.apply_index(lambda s: np.where(s.isin(["Royal Devon and Exeter Hospital (2016 to 2021)", "all E+W (2016 to 2021)"]), "color:pink;", "color:darkblue;"), axis=1)
+    # # df_to_show = df_to_show.style.apply_index(f, axis=1)
+
+    # df_to_show = df_to_show.style.apply_index(f, axis=1, subset=['Royal Devon and Exeter Hospital (2016 to 2021)'])#\
+    #         # .set_properties(**{'background-color': '#ffffb3'}, subset=slice_)
+    df_to_show = df_to_show.style.set_table_styles(
+        styles
+        )
+
     with container_results_table:
         st.header('Results')
         st.table(df_to_show)

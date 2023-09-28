@@ -52,42 +52,6 @@ except FileNotFoundError:
 # import utilities.container_details
 
 
-def make_emoji_dict_by_team(
-        year_options,
-        stroke_team_list,
-        stroke_team_list_years
-        ):
-    # Start with black circle for "all teams" group:
-    emoji_teams_vals = ['⚫'] * len(year_options)
-    # Cycle through these emoji for the other stroke teams:
-    emoji_teams = ['🔴', '🟠', '🟡', '🟢', '🔵', '🟣']  # '🟤' '⚪' '⚫' ⏺
-    for i in range(len(stroke_team_list)):
-        emoji_teams_vals += ([emoji_teams[i % len(emoji_teams)]] *
-                             len(year_options))
-    # st.write(text_colours_vals)
-    emoji_teams_dict = dict(zip(stroke_team_list_years, emoji_teams_vals))
-    return emoji_teams_dict
-
-
-def make_emoji_dict_by_region(
-        emoji_regions_dict,
-        year_options,
-        stroke_team_list,
-        stroke_team_list_years,
-        region_list,
-        all_regions_str='all E+W'
-        ):
-
-    # Start with "all teams" group:
-    emoji_teams_vals = ([emoji_regions_dict[all_regions_str]] *
-                        len(year_options))
-    for i in range(len(stroke_team_list)):
-        emoji_teams_vals += ([emoji_regions_dict[region_list[i]]] *
-                             len(year_options))
-    # st.write(text_colours_vals)
-    emoji_teams_dict = dict(zip(stroke_team_list_years, emoji_teams_vals))
-    return emoji_teams_dict
-
 
 def build_lists_for_each_team_and_year(
         stroke_team_list,
@@ -132,8 +96,7 @@ def inputs_region_choice(region_list):
 
 def input_stroke_teams_to_highlight_long(
         stroke_team_list_years_by_region_selected,
-        all_years_str,
-        emoji_teams_dict_by_region_selected
+        all_years_str
         ):
     """
     One long list of all of the options for this region
@@ -147,9 +110,7 @@ def input_stroke_teams_to_highlight_long(
     stroke_teams_selected = st.multiselect(
         'Stroke team',
         options=stroke_team_list_years_by_region_selected,
-        default=f'all E+W ({all_years_str})',
-        format_func=(lambda x:
-                        f'{emoji_teams_dict_by_region_selected[x]} {x}')
+        default=f'all E+W ({all_years_str})'
         )
     return stroke_teams_selected
 
@@ -159,7 +120,6 @@ def input_stroke_teams_to_highlight(
         year_options,
         region_team_list,
         all_years_str='',
-        emoji_teams_dict_by_region_selected={},
         containers=[]
         ):
     """
@@ -186,8 +146,6 @@ def input_stroke_teams_to_highlight(
                 options=stroke_team_list_years,
                 default=f'all E+W ({year})' if year == all_years_str else None,
                 key=f'input_teams_{year}'
-                # format_func=(lambda x:
-                #                 f'{emoji_teams_dict_by_region_selected[x]} {x}')
                 )
         all_stroke_teams_selected += stroke_teams_selected
 
@@ -197,8 +155,7 @@ def input_stroke_teams_to_highlight(
 def reduce_big_lists_to_regions_selected(
         region_team_list_years,
         regions_selected,
-        stroke_team_list_years,
-        emoji_teams_dict={}
+        stroke_team_list_years
 ):
     full_list_regions_selected_bool = np.full(
         len(region_team_list_years), False)
@@ -209,21 +166,7 @@ def reduce_big_lists_to_regions_selected(
     stroke_team_list_years_by_region_selected = (
         np.array(stroke_team_list_years)[full_list_regions_selected_bool]
     )
-    # st.write(emoji_teams_dict.keys())
-    # st.write(emoji_teams_dict.keys())
-    if len(list(emoji_teams_dict.keys())) > 0:
-        emoji_teams_dict_by_region_selected = dict(
-            zip(
-                np.array(list(emoji_teams_dict.keys()))[
-                    full_list_regions_selected_bool],
-                np.array(list(emoji_teams_dict.values()))[
-                    full_list_regions_selected_bool]
-                )
-            )
-    else:
-        emoji_teams_dict_by_region_selected = {}
-    return (stroke_team_list_years_by_region_selected,
-            emoji_teams_dict_by_region_selected)
+    return stroke_team_list_years_by_region_selected
 
 
 def plot_geography_pins(region_list, df_stroke_team):
@@ -267,18 +210,9 @@ def plot_geography_pins(region_list, df_stroke_team):
         lon=df_stroke_team['long'],
         lat=df_stroke_team['lat'],
         customdata=np.stack([df_stroke_team['Stroke Team']], axis=-1),
-        mode='text',
-        text=df_stroke_team['emoji']
+        mode='markers',
         # marker_color=df_stroke_team['RGN11NM']
     ))
-    # Text size for markers:
-    fig.update_layout(
-        font=dict(
-            # family="Courier New, monospace",
-            size=6,  # Set the font size here
-            # color="RebeccaPurple"
-        )
-    )
     # Projection options:
     # august  eckert1  fahey  times  van der grinten
     fig.update_layout(
@@ -425,23 +359,8 @@ def main():
         'East of England',
         'London',
     ]
-    # Use these emoji for the regions:
-    emoji_teams = [
-        '',  # for "all regions"
-        '🔴', '🟠', '🟡', '🟢', '🔵', '🟣', '🟤', '🩶', '⚫', '🩵'
-        ]
-    # st.write('''
-    # 🟥🟧🟨🟩🟦🟪🟫⬜⬛
-    # 🔴🟠🟡🟢🔵🟣🟤⚪⚫
-    # ❤️🧡💛💚💙🩵💜🤎🖤🩶🤍
-    # ''')
+    
     region_set = [all_regions_str] + region_list
-    emoji_regions_dict = dict(zip(region_set, emoji_teams))
-
-    df_stroke_team['emoji'] = [
-        emoji_regions_dict[region]
-        for region in df_stroke_team['RGN11NM']
-        ]
 
     cols_regions = st.columns([0.6, 0.4])
     with cols_regions[1]:
@@ -459,36 +378,24 @@ def main():
             stroke_team_list, year_options, region_team_list)
     )
 
-    emoji_teams_dict = make_emoji_dict_by_region(
-        emoji_regions_dict,
-        year_options,
-        stroke_team_list,
-        stroke_team_list_years,
-        region_team_list
-        )
-
     with cols_regions[0]:
         # Select a region:
         st.markdown('Show teams from these regions:')
         regions_selected = inputs_region_choice(region_list)
 
     # Reduce the big lists to only regions selected:
-    (stroke_team_list_years_by_region_selected,
-     emoji_teams_dict_by_region_selected
+    (stroke_team_list_years_by_region_selected
      ) = reduce_big_lists_to_regions_selected(
         region_team_list_years,
         regions_selected,
-        stroke_team_list_years,
-        emoji_teams_dict
+        stroke_team_list_years
         )
 
-    (stroke_team_list_by_region_selected,
-     emoji_teams_dict_2_by_region_selected
+    (stroke_team_list_by_region_selected
      ) = reduce_big_lists_to_regions_selected(
         region_team_list,
         regions_selected,
-        stroke_team_list,
-        emoji_teams_dict={}
+        stroke_team_list
         )
     stroke_team_list_by_region_selected = list(stroke_team_list_by_region_selected)
 
@@ -513,14 +420,8 @@ def main():
             year_options,
             region_team_list,
             all_years_str=all_years_str,
-            # emoji_teams_dict_by_region_selected,
             containers=team_input_containers
             )
-        # stroke_teams_selected = input_stroke_teams_to_highlight_long(
-        #     stroke_team_list_years_by_region_selected,
-        #     all_years_str,
-        #     emoji_teams_dict_by_region_selected
-        #     )
 
         limit_to_4hr = st.toggle('Limit to arrival within 4hr')
 

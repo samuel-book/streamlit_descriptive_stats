@@ -136,7 +136,8 @@ def plot_violins(
         year_options,
         stroke_teams_selected,
         all_years_str,
-        all_teams_str
+        all_teams_str,
+        team_colours_dict
         ):
     """
     Plot violins of this feature in each year.
@@ -205,7 +206,7 @@ def plot_violins(
             ))
 
     # Highlight selected teams with scatter markers:
-    for stroke_team in stroke_teams_selected:
+    for stroke_team in set(stroke_teams_selected):
         if stroke_team != all_teams_str:
             scatter_vals = s[(
                 # (s['year'] == year) &
@@ -215,7 +216,8 @@ def plot_violins(
                 x=scatter_vals['year'],
                 y=scatter_vals[feature],
                 mode='markers',
-                name=stroke_team
+                name=stroke_team,
+                marker_color=team_colours_dict[stroke_team]
             ))
 
     fig.update_layout(yaxis_title=feature)

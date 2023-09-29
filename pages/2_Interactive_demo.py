@@ -226,9 +226,6 @@ def main():
     ]
     df_to_show = df_to_show.loc[row_order]
 
-    # Temporary while fixing colours:
-    df_to_show.loc['colour'] = team_colours
-
     # Apply styles to the table:
     df_to_show = utilities_descriptive.container_results.\
         apply_styles_to_dataframe(df_to_show, team_colours)
@@ -258,7 +255,8 @@ def main():
             year_options,
             stroke_teams_selected_without_year,
             all_years_str,
-            all_teams_str
+            all_teams_str,
+            team_colours_dict
             )
 
     # ----- The end! -----

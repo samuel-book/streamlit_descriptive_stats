@@ -9,7 +9,6 @@ import matplotlib
 import numpy as np
 import streamlit as st
 
-# Functions:
 
 def remove_old_colours_for_highlights(highlighted_teams_input):
     # Remove highlighted colours that are no longer needed:

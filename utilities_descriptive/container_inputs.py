@@ -117,7 +117,7 @@ def input_stroke_teams_to_highlight(
             stroke_teams_selected = st.multiselect(
                 f'{year}',
                 options=stroke_team_list,
-                default='all E+W' if year == all_years_str else None,
+                default=all_teams_str if year == all_years_str else None,
                 key=f'input_teams_{year}'
                 )
         # The select box displays just the name of the team.

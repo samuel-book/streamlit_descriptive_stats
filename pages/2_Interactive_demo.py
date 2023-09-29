@@ -11,7 +11,6 @@ the app's repository. The data that goes into it is secret.
 # ----- Imports -----
 import streamlit as st
 import pandas as pd
-import numpy as np
 
 
 # Add an extra bit to the path if we need to.
@@ -140,11 +139,6 @@ def main():
         index_col=False
         ).sort_values('Stroke Team')
 
-    with container_map:
-        # Plot the team locations
-        utilities_descriptive.container_plots.\
-            plot_geography_pins(df_stroke_team)
-
     # List of years in the data:
     year_options = sorted(set(summary_stats_df.loc['year']))
     # Move the "all years" option to the front of the list:
@@ -175,17 +169,28 @@ def main():
     stroke_teams_selected_without_year = [
         team.split(' (')[0] for team in stroke_teams_selected]
 
+    # Update the colours assigned to the selected teams.
+    # These functions update the colours dict in the session state...
     utilities_descriptive.plot_utils.remove_old_colours_for_highlights(
         set(stroke_teams_selected_without_year))
     utilities_descriptive.plot_utils.choose_colours_for_highlights(
         set(stroke_teams_selected_without_year))
-
-    # Assign colours to selected teams.
+    # ... and this line pulls out the results of those functions:
     team_colours_dict = st.session_state['highlighted_teams_colours_ds']
-
-    # List of the team colours in the same order as the teams list:
+    # List of the team colours in the same order as the teams list
+    # (used for adding colours to the table).
     team_colours = [team_colours_dict[t] for t
                     in stroke_teams_selected_without_year]
+
+    # Now use these colours in drawing the map:
+    with container_map:
+        # Plot the team locations
+        utilities_descriptive.container_plots.\
+            plot_geography_pins(
+                df_stroke_team,
+                stroke_teams_selected_without_year,
+                team_colours_dict
+                )
 
     # ###########################
     # ######### RESULTS #########

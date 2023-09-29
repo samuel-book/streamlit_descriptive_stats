@@ -35,7 +35,11 @@ except FileNotFoundError:
     dir = 'streamlit_descriptive_stats/'
 
 
-def plot_geography_pins(df_stroke_team):
+def plot_geography_pins(
+        df_stroke_team,
+        stroke_teams_selected,
+        team_colours_dict
+        ):
     """
     Plot a map of England and Wales with the stroke teams marked.
 
@@ -91,16 +95,44 @@ def plot_geography_pins(df_stroke_team):
         featureidkey='properties.RGN11NM',
         colorscale='Picnic',
         showscale=False,
-        hoverinfo='skip'
+        hoverinfo='skip',
+        marker_line_color='DarkGrey'
     ))
-    # Add scatter markers for all hospitals:
+
+    # Add scatter markers for all non-selected hospitals:
+    # Pull out any row of the dataframe that contains any of the
+    # selected stroke team names in any of its columns.
+    df_most_teams = (
+        df_stroke_team[
+            ~df_stroke_team.isin(stroke_teams_selected).any(axis=1)]
+    )
     fig.add_trace(go.Scattergeo(
-        lon=df_stroke_team['long'],
-        lat=df_stroke_team['lat'],
-        customdata=np.stack([df_stroke_team['Stroke Team']], axis=-1),
+        lon=df_most_teams['long'],
+        lat=df_most_teams['lat'],
+        customdata=np.stack([df_most_teams['Stroke Team']], axis=-1),
         mode='markers',
-        # marker_color=df_stroke_team['RGN11NM']
+        marker_color='Tan',
+        marker_line_color='Peru',
+        marker_line_width=1.0,
+        showlegend=False
     ))
+
+    # Add scatter markers for the selected hospitals:
+    for stroke_team in stroke_teams_selected:
+        colour = team_colours_dict[stroke_team]
+        df_this_team = (
+            df_stroke_team[df_stroke_team['Stroke Team'] == stroke_team]
+        )
+        fig.add_trace(go.Scattergeo(
+            lon=df_this_team['long'],
+            lat=df_this_team['lat'],
+            customdata=np.stack([df_this_team['Stroke Team']], axis=-1),
+            mode='markers',
+            marker_color=colour,
+            marker_line_color='black',
+            marker_line_width=1.0,
+            showlegend=False
+        ))
 
     # Update geojson projection.
     # Projection options:
@@ -185,7 +217,7 @@ def plot_violins(
 
         # Draw a violin for this data:
         fig.add_trace(go.Violin(
-            x=[y]*len(violin_vals),#s['year'][s['year'] == year],
+            x=[y]*len(violin_vals),
             y=violin_vals,
             name=year,
             line=dict(color=colour),
@@ -213,7 +245,7 @@ def plot_violins(
     y_gap = 0.025
     y_max = 0.15
     # Where to scatter the team markers:
-    y_offsets_scatter = []#[0.0]
+    y_offsets_scatter = []
     while len(y_offsets_scatter) < len(set(stroke_teams_selected)):
         y_extra = np.arange(y_gap, y_max, y_gap)
         y_extra = np.stack((

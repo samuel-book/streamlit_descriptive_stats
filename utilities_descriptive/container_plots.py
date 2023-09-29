@@ -181,10 +181,11 @@ def plot_violins(
         # Include "to numeric" in case some of the numbers
         # are secretly strings (despite my best efforts).
         violin_vals = pd.to_numeric(s[feature][s['year'] == year])
+        # x_vals = [y]
 
         # Draw a violin for this data:
         fig.add_trace(go.Violin(
-            x=s['year'][s['year'] == year],
+            x=[y]*len(violin_vals),#s['year'][s['year'] == year],
             y=violin_vals,
             name=year,
             line=dict(color=colour),
@@ -196,7 +197,7 @@ def plot_violins(
         # Add three scatter markers for min/max/median
         # with vertical line connecting them:
         fig.add_trace(go.Scatter(
-            x=[year]*3,
+            x=[y]*3,
             y=[violin_vals.min(), violin_vals.max(), violin_vals.median()],
             line_color='black',
             marker=dict(size=20, symbol='line-ew-open'),
@@ -205,22 +206,49 @@ def plot_violins(
             hoverinfo='skip',
             ))
 
-    # Highlight selected teams with scatter markers:
-    for stroke_team in set(stroke_teams_selected):
+    # Highlight selected teams with scatter markers.
+
+    # Create some extra offsets from the centre of the violin
+    # to prevent the scatter markers all overlapping:
+    y_gap = 0.025
+    y_max = 0.15
+    # Where to scatter the team markers:
+    y_offsets_scatter = []#[0.0]
+    while len(y_offsets_scatter) < len(set(stroke_teams_selected)):
+        y_extra = np.arange(y_gap, y_max, y_gap)
+        y_extra = np.stack((
+            y_extra, -y_extra
+        )).T.flatten()
+        y_offsets_scatter = np.append(y_offsets_scatter, y_extra)
+        y_gap = 0.5 * y_gap
+
+    for i, stroke_team in enumerate(set(stroke_teams_selected)):
         if stroke_team != all_teams_str:
             scatter_vals = s[(
-                # (s['year'] == year) &
                 (s['stroke_team'] == stroke_team)
                 )]
+            # Just in case the years are out of order:
+            x_vals = [np.where(scatter_vals['year'] == year)[0][0]
+                      for year in year_options]
+            x_vals = np.array(x_vals) + y_offsets_scatter[i]
             fig.add_trace(go.Scatter(
-                x=scatter_vals['year'],
+                x=x_vals,
                 y=scatter_vals[feature],
                 mode='markers',
                 name=stroke_team,
-                marker_color=team_colours_dict[stroke_team]
+                marker_color=team_colours_dict[stroke_team],
+                marker_line_color='black',
+                marker_line_width=1.0,
+                hovertemplate='%{y}'
             ))
 
     fig.update_layout(yaxis_title=feature)
+    fig.update_layout(
+        xaxis=dict(
+            tickmode='array',
+            tickvals=np.arange(len(year_options)),
+            ticktext=[str(y) for y in year_options]
+        ))
     # Move legend to bottom
     fig.update_layout(legend=dict(
         orientation='h',

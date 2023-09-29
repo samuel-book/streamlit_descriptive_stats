@@ -265,8 +265,13 @@ def plot_violins(
                 (s['stroke_team'] == stroke_team)
                 )]
             # Just in case the years are out of order:
-            x_vals = [np.where(scatter_vals['year'] == year)[0][0]
-                      for year in year_options]
+            x_vals = []
+            for year in year_options:
+                inds = np.where(scatter_vals['year'] == year)[0]
+                if len(inds) > 0:
+                    x_vals.append(inds[0])
+                else:
+                    x_vals.append(np.NaN)
             x_vals = np.array(x_vals) + y_offsets_scatter[i]
             fig.add_trace(go.Scatter(
                 x=x_vals,

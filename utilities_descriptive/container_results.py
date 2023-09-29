@@ -93,7 +93,7 @@ def apply_styles_to_dataframe(df_to_show, team_colours):
     # when the cursor hovers on it. (A column is td).
     styles = [{
             'selector': 'tr:hover',
-            'props': [('background-color', '#ffffb3')]
+            'props': [('background-color', '#ffffb388')]
         }]
     # For each column in the dataframe, get the required colour out of
     # the colour list and define a new style for just the header (th)

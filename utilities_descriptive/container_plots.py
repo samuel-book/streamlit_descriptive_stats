@@ -117,7 +117,9 @@ def plot_geography_pins(
         showlegend=False
     ))
 
-    # Add scatter markers for the selected hospitals:
+    # Add scatter markers for the selected hospitals.
+    # The "all teams" and "all region" strings don't exist in this
+    # dataframe and so no trace will be added for them.
     for stroke_team in stroke_teams_selected:
         colour = team_colours_dict[stroke_team]
         df_this_team = (
@@ -199,8 +201,8 @@ def plot_violins(
 
     # Rename the dataframe to keep code short:
     s = summary_stats_df.T
-    # Remove "all teams" data:
-    s = s[s['stroke_team'] != all_teams_str]
+    # Remove "all teams" and "all of this region" data:
+    s = s[~s.stroke_team.str.startswith(('All '))]
 
     for y, year in enumerate(year_options):
         # Plot violins in grey except for the "all years" violin,
@@ -239,6 +241,9 @@ def plot_violins(
             ))
 
     # Highlight selected teams with scatter markers.
+    # Remove any of the "all teams" or "all region" data:
+    stroke_teams_selected = [t for t in stroke_teams_selected
+                             if t[:4] != 'All ']
 
     # Create some extra offsets from the centre of the violin
     # to prevent the scatter markers all overlapping:

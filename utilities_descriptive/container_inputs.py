@@ -103,6 +103,9 @@ def input_stroke_teams_to_highlight(
         df_stroke_team['Stroke Team'][
             df_stroke_team.isin(regions_selected).any(axis=1)]
     )
+    # Add on the "all of this region" teams:
+    for region in regions_selected:
+        stroke_team_list = np.append(f'All {region}', stroke_team_list)
     # Add on the "all teams" team:
     stroke_team_list = np.append(all_teams_str, stroke_team_list)
 

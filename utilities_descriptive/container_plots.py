@@ -110,12 +110,12 @@ def plot_geography_pins(
         lon=df_most_teams['long'],
         lat=df_most_teams['lat'],
         customdata=np.stack([df_most_teams['Stroke Team']], axis=-1),
-        mode='markers',
-        marker_color='Tan',
-        marker_line_color='Peru',
-        marker_line_width=1.0,
+        mode='text',
+        text='🏥',
         showlegend=False
     ))
+    # Text size for markers:
+    fig.update_layout(font=dict(size=14))
 
     # Add scatter markers for the selected hospitals.
     # The "all teams" and "all region" strings don't exist in this
@@ -133,6 +133,7 @@ def plot_geography_pins(
             marker_color=colour,
             marker_line_color='black',
             marker_line_width=1.0,
+            marker_size=10,
             showlegend=False
         ))
 

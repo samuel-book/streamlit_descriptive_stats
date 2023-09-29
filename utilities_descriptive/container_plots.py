@@ -46,13 +46,17 @@ def plot_geography_pins(
     This draws a shape for each region from a geojson that was created
     by combining all super-generalised LSOA shapes in each region.
     The markers are drawn using latitude and longitude coordinates that
-    were generated from the stroke teams' postcodes.
+    were generated from the stroke teams' postcodes. Most teams get a
+    generic marker, but teams in the input list get their own colour.
 
     Inputs:
     -------
-    df_stroke_team - pd.DataFrame. Dataframe of hospital locations.
-                     Must contain columns 'lat', 'long', and
-                     'Stroke Team' for marker positions and labels.
+    df_stroke_team        - pd.DataFrame. Dataframe of team locations.
+                            Must contain columns 'lat', 'long', and
+                            'Stroke Team' for marker positions/labels.
+    stroke_teams_selected - list. List of stroke teams to highlight.
+    team_colours_dict     - dict. Keys are stroke teams, values are
+                            colours to plot them in.
     """
     # Import geojson data:
     geojson_file = 'regions_EW.geojson'
@@ -207,6 +211,8 @@ def plot_violins(
                             e.g. "2016 to 2021".
     all_teams_str         - str. Label of all teams in the dataframe,
                             e.g. "all E+W".
+    team_colours_dict     - dict. Keys are stroke teams, values are
+                            colours to plot them in.
     """
     fig = go.Figure()
 

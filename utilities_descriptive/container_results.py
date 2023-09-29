@@ -82,9 +82,20 @@ def check_teams_in_stats_df(
 def apply_styles_to_dataframe(df_to_show, team_colours):
     """
 
-    (n.b. there seem to be simpler more pandas-friendly ways to
+    n.b. there seem to be simpler more pandas-friendly ways to
     achieve this with style.apply_index() and similar, but I can't
-    for the life of me get it working how I want to.)
+    for the life of me get it working how I want to.
+
+    Inputs:
+    -------
+    df_to_show   - pd.DataFrame. The descriptive statistics dataframe
+                   that will be shown on the app.
+    team_colours - dict. Keys are selected teams, values are the
+                   colours for columns containing them.
+
+    Returns:
+    --------
+    df_to_show - pd.DataFrame. The styled dataframe.
     """
     # Set up a list of styles for the table.
     # Each style is a dict with a selector to say where to apply the

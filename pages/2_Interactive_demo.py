@@ -56,11 +56,16 @@ def main():
 
     # Title:
     st.markdown('# 📊 Descriptive statistics')
+    st.markdown(''.join([
+        'Use this tool to compare multiple stroke teams\' ',
+        'performances and the characteristics of their patients.'
+        ]))
 
     # Build up the page layout:
     _ = """
     +-----------------------------------------------------------------+
     | 📊 Descriptive statistics                                       |
+    | An introductory sentence.                                       |
     |                                                                 |
     +----------cols_inputs_map[0]----------+---cols_inputs_map[1]-----+
     |                                      |                          |
@@ -75,11 +80,13 @@ def main():
     |                        container_results                        |
     |                                                                 |
     |                        container_violins                        |
+    |                                                                 |
+    |                        container_details                        |
     +-----------------------------------------------------------------+
     """
-
     cols_inputs_map = st.columns([0.6, 0.4])
     with cols_inputs_map[0]:
+        st.markdown('## Select stroke teams')
         container_input_regions = st.container()
     with cols_inputs_map[0]:
         container_input_teams = st.container()
@@ -90,21 +97,22 @@ def main():
     container_input_4hr_toggle = st.container()
     container_results_table = st.container()
     container_violins = st.container()
+    container_details = st.container()
 
     # Each team input box:
     with container_input_teams:
-        st.markdown('### Select stroke teams')
+        # st.markdown('### Select stroke teams')
         cols_t = st.columns(3)
         with cols_t[0]:
-            st.markdown('All years:')
+            st.markdown('### All years:')
         with cols_t[1]:
-            st.markdown('Separate years:')
+            st.markdown('### Separate years:')
         for col in cols_t[2:]:
             with col:
                 # Unicode looks-like-a-space character
                 # for vertical alignment with the other columns
                 # that have text in.
-                st.markdown('\U0000200B')
+                st.markdown('### \U0000200B')
         containers_list_team_inputs = [
             cols_t[0],             # All years
             cols_t[1], cols_t[2],  # 2016, 2017
@@ -206,30 +214,65 @@ def main():
         )
 
     # Update the order of the rows to this:
-    row_order = [
-        'count',
-        'age',
-        'male',
-        'infarction',
-        'stroke severity',
-        'onset-to-arrival time',
-        'onset known',
-        'arrive in 4  hours',
-        'precise onset known',
-        'onset during sleep',
-        'use of AF anticoagulants',
-        'prior disability',
-        'prestroke mrs 0-2',
-        'arrival-to-scan time',
-        'thrombolysis',
-        'scan-to-thrombolysis time',
-        'death',
-        'discharge disability',
-        'increased disability due to stroke',
-        'mrs 5-6',
-        'mrs 0-2'
+    index_names = {
+        'count': 'Count',
+        'age': 'Average age',
+        'male': 'Male',
+        'infarction': 'Infarction',
+        'stroke severity': 'Stroke severity',
+        'use of AF anticoagulants': 'AF anticoagulants',
+        'prior disability': 'Average pre-stroke disability',
+        'prestroke mrs 0-2': 'Pre-stroke mRS 0-2',
+        'onset known': 'Onset known',
+        'precise onset known': 'Precise onset known',
+        'onset during sleep': 'Onset during sleep',
+        'onset-to-arrival time': 'Onset-to-arrival time (minutes)',
+        'arrive in 4  hours': 'Arrive within 4 hours',
+        'arrival-to-scan time': 'Arrival-to-scan time (minutes)',
+        'thrombolysis': 'Thrombolysis',
+        'scan-to-thrombolysis time': 'Scan-to-thrombolysis time (minutes)',
+        'death': 'Death',
+        'discharge disability': 'Average discharge disability',
+        'increased disability due to stroke': 'Increased disability due to stroke',
+        'mrs 5-6': 'Discharge disability 5-6',
+        'mrs 0-2': 'Discharge disability 0-2'
+    }
+    # Reduce the dataframe to only these rows, in that order:
+    df_to_show = df_to_show.loc[list(index_names.keys())]
+    # Convert all string values to numeric:
+    # (when imported, the dataframe contained strings in the stroke_team
+    # column. Now that's gone, it's all numeric data.)
+    df_to_show = df_to_show.apply(pd.to_numeric)
+
+    # Change format to percentage:
+    rows_percentage = [
+        'male', 'infarction', 'use of AF anticoagulants',
+        'prestroke mrs 0-2', 'onset known', 'precise onset known',
+        'onset during sleep', 'arrive in 4  hours', 'thrombolysis',
+        'death', 'mrs 5-6', 'mrs 0-2'
     ]
-    df_to_show = df_to_show.loc[row_order]
+    for row in rows_percentage:
+        df_to_show.loc[row] = df_to_show.loc[row].apply('{:.1%}'.format)
+    # Change format to integer:
+    df_to_show.loc['count'] = df_to_show.loc['count'].apply('{:.0f}'.format)
+    # Change format of time rows:
+    rows_time = [
+        "onset-to-arrival time",
+        "arrival-to-scan time",
+        "scan-to-thrombolysis time"
+    ]
+    for row in rows_time:
+        df_to_show.loc[row] = df_to_show.loc[row].apply('{:.0f}'.format)
+    # Change format of float rows:
+    rows_float = [
+        'age', 'stroke severity', 'prior disability', 
+        'discharge disability', 'increased disability due to stroke'
+    ]
+    for row in rows_float:
+        df_to_show.loc[row] = df_to_show.loc[row].apply('{:.2f}'.format)
+
+    # Update index names.
+    df_to_show.index = index_names.values()
 
     # Apply styles to the table:
     df_to_show = utilities_descriptive.container_results.\
@@ -245,12 +288,12 @@ def main():
     # #########################
 
     with container_violins:
-        st.header('Feature breakdown')
+        st.header('Feature comparison')
 
         # User inputs for which feature to plot:
         feature = st.selectbox(
             'Pick a feature to plot',
-            options=row_order,
+            options=index_names.keys(),
             # default='count'
         )
 
@@ -263,6 +306,35 @@ def main():
             all_teams_str,
             team_colours_dict
             )
+
+    with container_details:
+        st.markdown(
+            '''
+## Where do these numbers come from?
+
+### Original data
+
+We start with a large dataset of a few hundreds of thousands of patients who attended stroke units across England and Wales.
+The data is limited to patients with out-of-hospital onset who arrive by ambulance.
+The data comes from the Sentinel Stroke National Audit Programme (SSNAP).
+
+We keep a copy of this original data and also create a subset that contains only patients who have known onset time and who arrived at hospital within four hours of stroke onset.
+Which of these two datasets is shown in the app is controlled with a "limit to 4hrs" toggle button.
+
+### Calculating the statistics
+
+The large dataset is broken down into smaller groups depending on which team(s) are being considered.
+For the "All England & Wales" group we use the full dataset.
+For "All South West" we use only patients who attended teams in the South West, and so on.
+When a specific team name is given, we use only patients who attended that team.
+
+One of these smaller groups will still contain many patients.
+We show the total number in the group with the "count" row in the table.
+For all of the other rows in the table, we wish to show an average value across all of these patients.
+For properties involving time ("onset-to-arrival time", "arrival-to-scan time", "scan-to-thrombolysis time") we take the median time.
+For all other properties, we take the mean value across all patients.
+'''
+)
 
     # ----- The end! -----
 

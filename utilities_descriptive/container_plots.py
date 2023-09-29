@@ -98,11 +98,15 @@ def plot_geography_pins(
         locations=df_regions['RGN11NM'],
         z=df_regions['v'],
         featureidkey='properties.RGN11NM',
-        colorscale='Picnic',
+        colorscale=[
+            [0.0, "rgba(0, 0, 0, 0)"],
+            [1.0, "rgba(0, 0, 0, 0)"]],
         showscale=False,
         hoverinfo='skip',
         marker_line_color='DarkGrey'
     ))
+    # The custom colour scale goes from transparent to transparent.
+    # All of the plotted shapes will have no colour.
 
     # Add scatter markers for all non-selected hospitals:
     # Pull out any row of the dataframe that contains any of the
@@ -165,6 +169,9 @@ def plot_geography_pins(
     )
     # Move legend:
     fig.update_layout(legend=dict(x=0, y=0, yanchor='top'))
+
+    # Add transparent background:
+    fig.update_layout(geo=dict(bgcolor='rgba(0,0,0,0)'))
 
     # Remove some buttons from the mode bar (top corner on hover).
     plotly_config = {

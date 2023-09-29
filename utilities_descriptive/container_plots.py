@@ -81,9 +81,14 @@ def plot_geography_pins(
 
     # Plot:
     fig = go.Figure()
+    # Sneakily make a slightly taller figure when there are more
+    # highlighted teams selected. This is because the legend gets
+    # taller and will start reducing the size of the map axes
+    # unless more room is provided.
     fig.update_layout(
         width=500,
-        height=500,
+        height=500 + 20*len([t for t in stroke_teams_selected
+                             if t[:4] != 'All ']),
         margin_l=0, margin_r=0, margin_t=0, margin_b=0
         )
 
@@ -110,12 +115,13 @@ def plot_geography_pins(
         lon=df_most_teams['long'],
         lat=df_most_teams['lat'],
         customdata=np.stack([df_most_teams['Stroke Team']], axis=-1),
-        mode='text',
-        text='🏥',
-        showlegend=False
+        mode='markers',
+        marker_color='Firebrick',
+        marker_size=8,
+        marker_symbol='cross',
+        # showlegend=False
+        name='Stroke teams'
     ))
-    # Text size for markers:
-    fig.update_layout(font=dict(size=14))
 
     # Add scatter markers for the selected hospitals.
     # The "all teams" and "all region" strings don't exist in this
@@ -134,7 +140,8 @@ def plot_geography_pins(
             marker_line_color='black',
             marker_line_width=1.0,
             marker_size=10,
-            showlegend=False
+            # showlegend=False
+            name=stroke_team
         ))
 
     # Update geojson projection.
@@ -149,13 +156,15 @@ def plot_geography_pins(
         # geo_resolution=50,
         geo_visible=False
     )
-    fig.update_geos(fitbounds="locations", visible=False)
+    # fig.update_geos(fitbounds="locations", visible=False)
 
     # Update hover info for scatter points:
     fig.update_traces(
         hovertemplate='%{customdata[0]}<extra></extra>',
         selector=dict(type='scattergeo')
     )
+    # Move legend:
+    fig.update_layout(legend=dict(x=0, y=0, yanchor='top'))
 
     # Remove some buttons from the mode bar (top corner on hover).
     plotly_config = {

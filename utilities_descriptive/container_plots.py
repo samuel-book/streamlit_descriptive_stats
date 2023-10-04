@@ -6,6 +6,7 @@ import plotly.graph_objs as go
 import geojson
 import numpy as np
 import pandas as pd
+from scipy.stats import linregress
 
 # Add an extra bit to the path if we need to.
 # Try importing something as though we're running this from the same
@@ -358,16 +359,33 @@ def scatter_fields(
                               if t[:4] == 'All ']
     df = df[~df.isin(stroke_teams_named_all).any(axis=1)]
 
+    # Create the line of best fit:
+    lobf = linregress(
+        list(df[x_feature_name].astype(float).values),
+        list(df[y_feature_name].astype(float).values)
+        )
+
     fig = go.Figure()
 
     # Quick attempt to get near-square axis:
     fig.update_layout(
-        width=900,
+        width=800,
         height=500,
         # margin_l=0, margin_r=0, margin_t=0, margin_b=0
         )
 
-    # mask_team = df[~df['stroke_team']]
+    # Plot the line of best fit:
+    lobf_name = (
+        f'{lobf.intercept:.3f} +' +
+        f'({x_feature_display_name}) × ({lobf.slope:.3f})'
+        )
+    fig.add_trace(go.Scatter(
+        x=df[x_feature_name],
+        y=lobf.intercept + lobf.slope * df[x_feature_name].astype(float),
+        name=lobf_name,
+        hoverinfo='skip',
+        marker_color='silver'
+    ))
 
     # Pull out any row of the dataframe that contains any of the
     # selected stroke team names in any of its columns.

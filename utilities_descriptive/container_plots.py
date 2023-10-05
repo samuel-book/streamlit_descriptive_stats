@@ -445,8 +445,20 @@ def scatter_fields(
         c_feature_display_name,
         ):
     """
+    Scatter selected descriptive stats data for all teams.
 
-    feature_display_name  - str. How to print the feature name.
+    Inputs:
+    -------
+    x_feature_name         - str. df column for x-axis data.
+    y_feature_name         - str. df column for y-axis data.
+    c_feature_name         - str. df column for colour data.
+    year_restriction       - str. Which years of data to use.
+    df                     - pd.DataFrame. Descriptive stats data.
+    stroke_teams_selected  - list. Names of stroke teams to highlight.
+    team_colours_dict      - dict. Colours for highlighted teams.
+    x_feature_display_name - str. x-axis label.
+    y_feature_display_name - str. y-axis label.
+    c_feature_display_name - str. Colour axis label.
     """
     df = df.T
 
@@ -534,7 +546,10 @@ def scatter_fields(
             marker_line_color='black',
             marker_line_width=1.0,
             customdata=np.stack([df[c_feature_name].astype(float)], axis=-1),
-            hovertemplate='(%{x}, %{y})<br>' + c_feature_display_name + ': %{customdata[0]}<extra>%{text}</extra>'
+            hovertemplate=(
+                '(%{x}, %{y})<br>' + c_feature_display_name +
+                ': %{customdata[0]}<extra>%{text}</extra>'
+                )
         ))
         fig.update_coloraxes(colorbar_title_text=c_feature_display_name)
     else:

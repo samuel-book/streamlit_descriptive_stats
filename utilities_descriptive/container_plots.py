@@ -495,11 +495,23 @@ def scatter_fields(
         margin_l=0, margin_r=0, margin_t=0, margin_b=0
         )
 
-    # Plot the line of best fit:
+    # Create the legend label for the line of best fit.
+    # Round numbers to 3 significant figures and then convert
+    # large (>=1000) numbers back from general string format to
+    # float to avoid printing scientific notation (e.g. 4.01e+3).
+    lobf_int = (
+        f'{lobf.intercept:.3g}' if abs(lobf.intercept) < 1000
+        else int(float(f'{lobf.intercept:.3g}'))
+    )
+    lobf_slope = (
+        f'{lobf.slope:.3g}' if abs(lobf.slope) < 1000
+        else int(float(f'{lobf.slope:.3g}'))
+    )
     lobf_name = (
-        f'{lobf.intercept:.3f} + ' +
-        f'({x_feature_display_name}) × ({lobf.slope:.3f})'
+        f'{lobf_int} + ' +
+        f'({x_feature_display_name}) × ({lobf_slope})'
         )
+    # Plot the line of best fit:
     fig.add_trace(go.Scatter(
         x=df[x_feature_name],
         y=lobf.intercept + lobf.slope * df[x_feature_name].astype(float),

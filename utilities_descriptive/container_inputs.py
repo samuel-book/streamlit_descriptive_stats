@@ -120,7 +120,7 @@ def input_stroke_teams_to_highlight(
         for t in stroke_teams_selected
         ]
     all_stroke_teams_selected_without_year = (
-        stroke_teams_selected * len(years_selected))
+        stroke_teams_selected * max(1, len(years_selected)))
 
     return (
         all_stroke_teams_selected,
